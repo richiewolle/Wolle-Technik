@@ -210,7 +210,7 @@ footer details p a,footer details li a{text-decoration:underline;text-underline-
 .knopf.rot::before{background:repeating-linear-gradient(-45deg,#c1121c 0 14px,#8f1f18 14px 28px);background-size:39.6px 100%;opacity:0;animation:band 1.2s linear infinite}
 .knopf.rot:hover::before,.knopf.rot:focus-visible::before,.knopf.rot:active::before{opacity:1}
 @keyframes signal{0%{box-shadow:0 0 0 0 rgba(167,41,32,.55)}70%,100%{box-shadow:0 0 0 16px rgba(167,41,32,0)}}
-@keyframes band{to{background-position-x:39.6px}}
+@keyframes band{to{background-position:39.6px 0}}
 
 /* Überschrift im Start: baut sich schichtweise von unten auf */
 .start h1.gedruckt{animation:drucktext 1.5s steps(16) .4s both}
@@ -252,8 +252,10 @@ h2.zeigen.da::after,.zeigen.da h2::after{transform:none}
 @keyframes glut{from{opacity:.55}to{opacity:1}}
 
 /* Feuerwehr: Warnstreifen laufen, Rolltor fährt hoch, Blaulicht blitzt doppelt */
-.feuerwehr::before{background-size:56.57px 100%;animation:streifen 3s linear infinite}
-@keyframes streifen{to{background-position-x:56.57px}}
+/* Band ist eine Streifenbreite länger und wird verschoben (transform läuft auch auf iPhone/Safari flüssig) */
+.feuerwehr{overflow:hidden}
+.feuerwehr::before{left:-56.57px;will-change:transform;animation:streifen 3s linear infinite}
+@keyframes streifen{to{transform:translateX(56.57px)}}
 .blaulicht .tor{display:grid;place-items:center;font:700 clamp(1.9rem,5vw,3rem) var(--display);letter-spacing:.05em;color:var(--feuerrot);position:absolute;inset:0;z-index:2;background:repeating-linear-gradient(#e3e7ec 0 20px,#b4bdc8 20px 23px);border-bottom:14px solid var(--feuerrot);transition:transform 1.9s cubic-bezier(.5,0,.2,1) .7s}
 .blaulicht.auf .tor{transform:translateY(-101%)}
 .blaulicht i{animation:blitz 1.8s linear infinite}
@@ -761,10 +763,11 @@ document.querySelectorAll(".zeigen").forEach(el => seher.observe(el));
 const zeichnung = document.querySelector(".zeichnung");
 new IntersectionObserver((es, o) => es.forEach(e => { if (e.isIntersecting) { zeichnung.classList.add("an"); o.disconnect(); } }), { threshold: .35 }).observe(zeichnung);
 
-/* ---------- Rolltor: fährt erst hoch, wenn der Text daneben bzw. darunter gut im Bild ist ---------- */
+/* ---------- Rolltor: fährt hoch, sobald das Tor selbst gut zur Hälfte im Bild ist (auch auf dem Handy, wo der Text darunter steht) ---------- */
+const tor = document.querySelector(".blaulicht");
 new IntersectionObserver((es, o) => es.forEach(e => {
-  if (e.isIntersecting) { document.querySelector(".blaulicht").classList.add("auf"); o.disconnect(); }
-}), { threshold: .6 }).observe($("feuerwehrText"));
+  if (e.isIntersecting) { tor.classList.add("auf"); o.disconnect(); }
+}), { threshold: .5 }).observe(tor);
 
 /* ---------- Fadenkreuz im Start ---------- */
 const startBereich = $("start"), kreuz = $("fadenkreuz");
