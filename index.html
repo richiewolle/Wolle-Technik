@@ -533,6 +533,17 @@ const EINSTELLUNGEN = {
   formularAdresse: ""
 };
 
+/* ---------- Beim Neuladen immer oben anfangen ----------
+   Der Browser soll sich die alte Position nicht merken. Wird die Seite neu geladen,
+   fällt auch ein #abschnitt aus der Adresse weg (z. B. nach Klick auf „3D-Druck“).
+   Wer über einen Link wie wolle-technik.de/#kontakt kommt, landet aber weiterhin dort. */
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+const neuGeladen = performance.getEntriesByType("navigation")[0]?.type === "reload";
+if (neuGeladen || !location.hash) {
+  if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+  scrollTo({ top: 0, behavior: "instant" });
+}
+
 /* ---------- Kontaktdaten einsetzen ---------- */
 const $ = id => document.getElementById(id);
 $("jahr").textContent = new Date().getFullYear();
