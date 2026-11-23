@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wolle Technik – 3D-Konstruktion und 3D-Druck</title>
+<meta name="description" content="Wolle Technik konstruiert und druckt Bauteile nach Ihrem Bedarf: Ersatzteile, Halterungen, Prototypen. Jetzt unverbindlich anfragen.">
+<link rel="icon" href="favicon.png">
+<style>
+/* ---------- Schriften (lokal eingebunden, kein Google-Server) ---------- */
+@font-face{font-family:"Chakra Petch";font-weight:500;font-display:swap;src:url(fonts/chakra-petch-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Chakra Petch";font-weight:700;font-display:swap;src:url(fonts/chakra-petch-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Sans";font-weight:400;font-display:swap;src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Sans";font-weight:600;font-display:swap;src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format("woff2")}
+
+:root{
+  /* dunkler Bereich: Kopfzeile, Start, Fuß */
+  --grund:#0a1a30;
+  --flaeche:#102542;
+  --kante:#27405f;
+  --blau:#0a7bff;
+  --hellblau:#35b0ff;
+  --schrift:#eef3f8;
+  --schrift-leise:#a9b8c8;
+  /* Feuerwehr: Feuerrot RAL 3000 und Weiß */
+  --feuerrot:#a72920;
+  --display:"Chakra Petch","Arial Narrow",sans-serif;
+  --text:"IBM Plex Sans",system-ui,sans-serif;
+  --breite:1120px;
+}
+/* heller Bereich: alle Abschnitte unter dem Start */
+.hell{--grund:#ffffff;--flaeche:#f1f5f9;--kante:#d3dce6;--hellblau:#0a6be0;--schrift:#13233a;--schrift-leise:#52627a;color:var(--schrift);background:var(--flaeche)}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{background:var(--grund);color:var(--schrift);font:400 1.0625rem/1.6 var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{max-width:100%;height:auto;display:block}
+a{color:var(--hellblau)}
+:focus-visible{outline:2px solid var(--hellblau);outline-offset:3px;border-radius:4px}
+h1,h2,h3{font-family:var(--display);font-weight:700;line-height:1.08;letter-spacing:-.01em;text-wrap:balance}
+h1{font-size:clamp(2.4rem,5.4vw,3.9rem)}
+h2{font-size:clamp(1.9rem,4vw,3rem)}
+h3{font-size:1.25rem;line-height:1.25}
+p{max-width:62ch}
+.huelle{width:min(var(--breite),100% - 2.5rem);margin-inline:auto}
+.leise{color:var(--schrift-leise)}
+
+/* ---------- Knöpfe ---------- */
+.knopf{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font:500 1.05rem var(--display);padding:.85rem 1.5rem;border-radius:6px;border:1px solid transparent;text-decoration:none;cursor:pointer;transition:background .2s,border-color .2s,transform .15s,box-shadow .2s}
+.knopf:active{transform:translateY(1px)}
+.knopf.voll{background:var(--blau);color:#fff;box-shadow:0 0 0 0 rgba(10,123,255,.5)}
+.knopf.voll:hover{background:var(--hellblau);box-shadow:0 0 28px -4px rgba(34,167,255,.7)}
+.knopf.rand{border-color:var(--kante);color:var(--schrift);background:transparent}
+.knopf.rand:hover{border-color:var(--hellblau)}
+
+/* ---------- Kopfzeile ---------- */
+.kopf{position:fixed;inset:0 0 auto 0;z-index:20;transition:background .3s,border-color .3s;border-bottom:1px solid transparent}
+.kopf.fest{background:rgba(10,26,48,.92);backdrop-filter:blur(10px);border-color:var(--kante)}
+.kopf .huelle{display:flex;align-items:center;justify-content:space-between;height:68px}
+.kopf .marke img{height:30px;width:auto}
+.kopf nav{display:flex;align-items:center;gap:1.75rem}
+.kopf nav a{color:var(--schrift);text-decoration:none;font:500 1rem var(--display)}
+.kopf nav a:not(.knopf):hover{color:var(--hellblau)}
+.kopf nav .knopf{padding:.5rem 1rem;font-size:.95rem}
+@media (max-width:720px){.kopf nav a:not(.knopf){display:none}}
+
+/* ---------- Leiterbahn am Rand (zeigt, wo man auf der Seite ist) ---------- */
+.bahn{position:fixed;left:26px;top:50%;transform:translateY(-50%);height:min(56vh,420px);width:14px;z-index:15;display:none}
+@media (min-width:1280px){.bahn{display:block}}
+.bahn::before,.bahn i{content:"";position:absolute;left:6px;top:0;width:2px;border-radius:2px}
+.bahn::before{height:100%;background:var(--kante)}
+.bahn i{height:calc(var(--weg,0)*100%);background:linear-gradient(var(--blau),var(--hellblau));box-shadow:0 0 10px var(--blau)}
+.bahn a{position:absolute;left:0;width:14px;height:14px;margin-top:-7px;border-radius:50%;border:2px solid var(--kante);background:var(--grund);transition:border-color .3s,box-shadow .3s}
+.bahn a.an{border-color:var(--hellblau);box-shadow:0 0 12px var(--blau)}
+.bahn a span{position:absolute;left:24px;top:50%;transform:translateY(-50%);white-space:nowrap;font:500 .85rem var(--display);color:var(--schrift-leise);opacity:0;transition:opacity .2s;pointer-events:none}
+.bahn a:hover span,.bahn a:focus-visible span{opacity:1}
+
+/* ---------- Start ---------- */
+.start{background:linear-gradient(#0a1a30,#0f2c56);position:relative;min-height:100svh;display:grid;align-items:center;padding:110px 0 70px;isolation:isolate}
+.start .raster{display:grid;grid-template-columns:1.05fr .95fr;gap:3rem;align-items:center}
+.start h1{margin-bottom:1.4rem}
+.start .einleitung{font-size:1.2rem;color:#c3cad1;margin-bottom:2.2rem;max-width:48ch}
+.start .wahl{display:flex;flex-wrap:wrap;gap:.9rem}
+.start::before{content:"";position:absolute;inset:0;z-index:-1;
+  background-image:linear-gradient(rgba(34,167,255,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(34,167,255,.09) 1px,transparent 1px),
+    linear-gradient(rgba(34,167,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(34,167,255,.04) 1px,transparent 1px);
+  background-size:120px 120px,120px 120px,24px 24px,24px 24px;
+  -webkit-mask-image:radial-gradient(ellipse at 70% 45%,#000 10%,transparent 72%);mask-image:radial-gradient(ellipse at 70% 45%,#000 10%,transparent 72%)}
+.startlogo{width:230px;margin:0 0 1.2rem -12px}
+@media (max-width:860px){.start .raster{grid-template-columns:1fr;gap:1.5rem}.zeichnung{max-width:440px}}
+
+/* CAD-Zeichnung im Start: Kanten zeichnen sich, Flächen füllen sich, dann kommen die Maße */
+.zeichnung{width:100%;height:auto;display:block;overflow:visible}
+.zeichnung path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.zeichnung:not(.an) *{animation-play-state:paused!important}   /* startet erst, wenn die Zeichnung im Bild ist */
+.zeichnung .kante{stroke:var(--hellblau);stroke-width:2;stroke-dasharray:1;stroke-dashoffset:1;animation:ziehen .6s ease-out forwards;animation-delay:calc(var(--n)*.11s + .8s)}
+.zeichnung .loch{animation-duration:.9s}
+.zeichnung .verdeckt{stroke:#4a7fbd;stroke-width:1.5;stroke-dasharray:5 6;opacity:0;animation:auf .8s forwards 3.2s}
+.zeichnung .flaeche{fill:var(--blau);stroke:none;opacity:0;animation:fuellen 1.2s ease forwards 3.4s}
+.zeichnung .mass{opacity:0;animation:auf .7s forwards;animation-delay:calc(var(--n)*.25s + 4.4s)}
+.zeichnung .mass path{stroke:var(--schrift-leise);stroke-width:1}
+.zeichnung .mass circle{fill:var(--schrift-leise)}
+.zeichnung .mass text{font:500 17px var(--display);fill:var(--schrift)}
+@keyframes ziehen{to{stroke-dashoffset:0}}
+@keyframes fuellen{to{opacity:var(--o)}}
+@keyframes auf{to{opacity:1}}
+
+/* Einstieg der Texte */
+.start .rein{opacity:0;transform:translateY(18px);animation:rein .9s cubic-bezier(.2,.7,.2,1) forwards;animation-delay:calc(var(--n)*.12s + .5s)}
+@keyframes rein{to{opacity:1;transform:none}}
+
+/* ---------- Abschnitte ---------- */
+.abschnitt{padding:clamp(4.5rem,10vw,8rem) 0;position:relative}
+.abschnitt>.huelle>h2{margin-bottom:1rem}
+.abschnitt .vorspann{font-size:1.15rem;color:var(--schrift-leise);margin-bottom:3rem}
+.zeigen{opacity:0;transform:translateY(24px);transition:opacity .8s,transform .8s cubic-bezier(.2,.7,.2,1)}
+.zeigen.da{opacity:1;transform:none}
+
+/* ---------- 3D-Druck ---------- */
+.druck .raster{display:grid;grid-template-columns:1fr 1fr;gap:clamp(2rem,6vw,5rem);align-items:center}
+@media (max-width:860px){.druck .raster{grid-template-columns:1fr}}
+.schritte{list-style:none;padding:0;counter-reset:s;display:grid;gap:0}
+.schritte li{counter-increment:s;display:grid;grid-template-columns:3rem 1fr;gap:1rem;padding:1.35rem 0;border-top:1px solid var(--kante)}
+.schritte li:last-child{border-bottom:1px solid var(--kante)}
+.schritte li::before{content:counter(s);font:700 1.6rem/1 var(--display);color:var(--hellblau);padding-top:.15rem}
+.schritte h3{margin-bottom:.3rem}
+.schritte p{color:var(--schrift-leise);font-size:1rem}
+.eignung{margin-top:2.2rem;display:flex;flex-wrap:wrap;gap:.6rem;list-style:none;padding:0}
+.eignung li{border:1px solid var(--kante);border-radius:999px;padding:.35rem .95rem;font-size:.95rem;color:var(--schrift);background:var(--grund)}
+
+.druck{background:linear-gradient(#0f2c56,#0a1a30)}
+/* Drucker-Animation (Ablauf steuert das Skript unten) */
+.drucker{width:100%;max-width:440px;margin-inline:auto;display:block}
+.druckinfo{text-align:center;margin:.9rem auto 0;color:var(--schrift-leise);font-size:.95rem}
+
+/* ---------- Feuerwehr: Feuerrot und Weiß ---------- */
+.feuerwehr{background:var(--grund)}
+.feuerwehr::before{content:"";position:absolute;left:0;right:0;top:0;height:12px;background:repeating-linear-gradient(-45deg,var(--feuerrot) 0 20px,#fff 20px 40px);border-bottom:1px solid var(--kante)}
+.feuerwehr .raster{display:grid;grid-template-columns:.9fr 1.1fr;gap:clamp(2rem,6vw,4.5rem);align-items:center}
+@media (max-width:860px){.feuerwehr .raster{grid-template-columns:1fr}}
+.feuerwehr h2{margin-bottom:1.2rem;color:var(--feuerrot)}
+.feuerwehr p{margin-bottom:1rem}
+.feuerwehr .knopf{margin-top:1rem}
+.knopf.rot{background:var(--feuerrot);color:#fff}
+.knopf.rot:hover{background:#c1121c;box-shadow:0 0 28px -6px rgba(167,41,32,.8)}
+.blaulicht{aspect-ratio:4/3;border-radius:12px;background:var(--feuerrot);position:relative;overflow:hidden;display:grid;place-items:center;box-shadow:0 22px 44px -26px rgba(167,41,32,.8)}
+.blaulicht::after{content:"";position:absolute;left:0;right:0;bottom:14%;height:7%;background:#fff}
+.blaulicht i{position:absolute;top:-34%;width:70%;aspect-ratio:1;border-radius:50%;background:radial-gradient(closest-side,rgba(150,205,255,.75),transparent);opacity:.1;animation:blau 2.8s ease-in-out infinite}
+.blaulicht i:first-child{left:-15%}
+.blaulicht i:nth-child(2){right:-15%;animation-delay:1.4s}
+@keyframes blau{0%,100%{opacity:.08}50%{opacity:.85}}
+.blaulicht p{position:relative;font:700 clamp(1.4rem,3vw,2rem) var(--display);color:#fff;margin:0 0 6%}
+.platzhalter{background:rgba(255,196,0,.12);color:#ffd866;border-radius:3px;padding:0 .25em}
+
+/* ---------- Kontakt ---------- */
+.kontakt .raster{display:grid;grid-template-columns:.8fr 1.2fr;gap:clamp(2rem,6vw,5rem)}
+@media (max-width:860px){.kontakt .raster{grid-template-columns:1fr}}
+.kontakt .wege{margin-top:2rem;display:grid;gap:1.2rem}
+.kontakt .wege div{border-left:2px solid var(--blau);padding-left:1rem}
+.kontakt .wege strong{display:block;font:500 1rem var(--display);color:var(--schrift-leise)}
+.kontakt .wege a,.kontakt .wege span{font-size:1.15rem;color:var(--schrift);text-decoration:none}
+.kontakt .wege a:hover{color:var(--hellblau)}
+form{display:grid;gap:1.2rem;background:var(--grund);border:1px solid var(--kante);border-radius:12px;box-shadow:0 18px 40px -24px rgba(19,35,58,.35);padding:clamp(1.25rem,3vw,2rem)}
+fieldset{border:0;padding:0}
+legend,label{font:500 1rem var(--display);margin-bottom:.45rem;display:block}
+.anliegen{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+@media (max-width:520px){.anliegen{grid-template-columns:1fr}}
+.anliegen label{margin:0;position:relative}
+.anliegen input{position:absolute;opacity:0;inset:0}
+.anliegen span{display:block;text-align:center;padding:.7rem .5rem;border:1px solid var(--kante);border-radius:6px;cursor:pointer;transition:all .2s;font-size:.98rem}
+.anliegen input:checked+span{border-color:var(--hellblau);background:rgba(10,123,255,.14);box-shadow:inset 0 0 0 1px var(--hellblau)}
+.anliegen input:focus-visible+span{outline:2px solid var(--hellblau);outline-offset:3px}
+input[type=text],input[type=email],input[type=number],select,textarea{width:100%;background:var(--flaeche);border:1px solid var(--kante);border-radius:6px;color:var(--schrift);font:400 1rem var(--text);padding:.75rem .9rem;transition:border-color .2s,box-shadow .2s}
+textarea{min-height:150px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--hellblau);box-shadow:0 0 0 3px rgba(34,167,255,.2)}
+.zwei{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media (max-width:520px){.zwei{grid-template-columns:1fr}}
+.nur3d{display:grid;grid-template-rows:1fr;transition:grid-template-rows .35s,opacity .35s}
+.nur3d>div{overflow:hidden}
+.nur3d.zu{grid-template-rows:0fr;opacity:0}
+.hinweis{font-size:.9rem;color:var(--schrift-leise)}
+.ergebnis{border:1px solid var(--hellblau);border-radius:8px;padding:1rem 1.1rem;background:rgba(10,123,255,.08)}
+.ergebnis pre{white-space:pre-wrap;font:400 .92rem/1.5 var(--text);color:var(--schrift-leise);margin:.8rem 0;max-height:200px;overflow:auto}
+.ergebnis[hidden]{display:none}
+
+/* ---------- Fuß ---------- */
+footer{border-top:1px solid var(--kante);padding:2.5rem 0 3rem;color:var(--schrift-leise);font-size:.95rem}
+footer .huelle{display:grid;gap:1.2rem}
+footer details{border-top:1px solid var(--kante);padding-top:1rem}
+footer summary{cursor:pointer;color:var(--schrift);font:500 1rem var(--display)}
+footer details p{margin-top:.8rem}
+footer details a{color:inherit;text-decoration:none}
+footer details a:hover{color:var(--hellblau)}
+footer details h3{font:500 1.05rem var(--display);color:var(--schrift);margin-top:1.6rem}
+footer details ul{margin-top:.6rem;padding-left:1.2rem;max-width:62ch}
+footer details li{margin-top:.25rem}
+footer details p a,footer details li a{text-decoration:underline;text-underline-offset:2px}
+
+/* ================= ZUSÄTZLICHE ANIMATIONEN ================= */
+
+/* Knöpfe: füllen sich beim Berühren Schicht für Schicht wie ein Druck */
+.knopf{position:relative;overflow:hidden;isolation:isolate}
+.knopf::before{content:"";position:absolute;inset:0;z-index:-1;transition:transform .45s cubic-bezier(.3,.7,.2,1),opacity .3s}
+.knopf.voll::before{background:repeating-linear-gradient(0deg,#35b0ff 0 3px,#1f95f5 3px 6px);transform:translateY(101%)}
+.knopf.voll:hover::before,.knopf.voll:focus-visible::before,.knopf.voll:active::before{transform:none}
+.knopf.voll:hover{background:var(--blau)}
+.knopf.rand::before{background:rgba(53,176,255,.16);transform:scaleX(0);transform-origin:left}
+.knopf.rand:hover::before,.knopf.rand:focus-visible::before,.knopf.rand:active::before{transform:none}
+/* Feuerwehr-Knopf: Signalring pulsiert, beim Berühren laufen Warnstreifen durch */
+.knopf.rot{animation:signal 2.6s ease-out infinite}
+.knopf.rot::before{background:repeating-linear-gradient(-45deg,#c1121c 0 14px,#8f1f18 14px 28px);background-size:39.6px 100%;opacity:0;animation:band 1.2s linear infinite}
+.knopf.rot:hover::before,.knopf.rot:focus-visible::before,.knopf.rot:active::before{opacity:1}
+@keyframes signal{0%{box-shadow:0 0 0 0 rgba(167,41,32,.55)}70%,100%{box-shadow:0 0 0 16px rgba(167,41,32,0)}}
+@keyframes band{to{background-position-x:39.6px}}
+
+/* Überschrift im Start: baut sich schichtweise von unten auf */
+.start h1.gedruckt{animation:drucktext 1.5s steps(16) .4s both}
+@keyframes drucktext{from{clip-path:inset(100% 0 0 0)}to{clip-path:inset(-10% 0 -10% 0)}}
+
+/* Fadenkreuz mit Koordinaten folgt der Maus im Start (nur mit Maus) */
+.start .huelle{position:relative;z-index:1}
+.fadenkreuz{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .3s}
+.fadenkreuz.aktiv{opacity:1}
+.fadenkreuz i{position:absolute;background:rgba(53,176,255,.28)}
+.fadenkreuz i:first-child{top:0;bottom:0;width:1px;left:var(--x)}
+.fadenkreuz i:nth-child(2){left:0;right:0;height:1px;top:var(--y)}
+.fadenkreuz span{position:absolute;left:calc(var(--x) + 12px);top:calc(var(--y) + 10px);font:500 .75rem var(--display);color:#7fd0ff;white-space:nowrap}
+
+/* Maßlinie unter den Abschnitts-Überschriften zieht sich auf */
+.abschnitt h2::after{content:"";display:block;width:170px;height:11px;margin-top:.7rem;--m:var(--mass,var(--hellblau));
+  background:linear-gradient(var(--m),var(--m)) left/2px 100% no-repeat,linear-gradient(var(--m),var(--m)) right/2px 100% no-repeat,linear-gradient(var(--m),var(--m)) center/100% 2px no-repeat;
+  transform:scaleX(0);transform-origin:left;transition:transform .9s cubic-bezier(.3,.7,.2,1) .35s}
+h2.zeigen.da::after,.zeigen.da h2::after{transform:none}
+.feuerwehr{--mass:var(--feuerrot)}
+
+/* Schritte und Stichworte erscheinen nacheinander */
+.schritte li,.eignung li{opacity:0;transform:translateX(-16px);transition:opacity .6s,transform .6s cubic-bezier(.2,.7,.2,1);transition-delay:calc(var(--i,0)*.13s + .2s)}
+.eignung li{transform:translateY(10px) scale(.92);transition-delay:calc(var(--i,0)*.07s + .8s)}
+.zeigen.da .schritte li,.zeigen.da .eignung li{opacity:1;transform:none}
+.schritte li:nth-child(2),.eignung li:nth-child(2){--i:1}.schritte li:nth-child(3),.eignung li:nth-child(3){--i:2}.schritte li:nth-child(4),.eignung li:nth-child(4){--i:3}.eignung li:nth-child(5){--i:4}.eignung li:nth-child(6){--i:5}
+.schritte li::before{transition:transform .25s,text-shadow .25s;transform-origin:left center}
+.schritte li:hover::before{transform:scale(1.25);text-shadow:0 0 14px var(--hellblau)}
+.eignung li{cursor:default}
+.eignung li:hover{border-color:var(--hellblau);color:var(--hellblau)}
+
+/* Menü: Unterstrich wächst */
+.kopf nav a:not(.knopf){position:relative}
+.kopf nav a:not(.knopf)::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:2px;background:var(--hellblau);transform:scaleX(0);transform-origin:left;transition:transform .3s}
+.kopf nav a:not(.knopf):hover::after{transform:none}
+
+/* Drucker: Düse glüht */
+#d-glut{animation:glut 1s ease-in-out infinite alternate}
+@keyframes glut{from{opacity:.55}to{opacity:1}}
+
+/* Feuerwehr: Warnstreifen laufen, Rolltor fährt hoch, Blaulicht blitzt doppelt */
+.feuerwehr::before{background-size:56.57px 100%;animation:streifen 3s linear infinite}
+@keyframes streifen{to{background-position-x:56.57px}}
+.blaulicht .tor{display:grid;place-items:center;font:700 clamp(1.9rem,5vw,3rem) var(--display);letter-spacing:.05em;color:var(--feuerrot);position:absolute;inset:0;z-index:2;background:repeating-linear-gradient(#e3e7ec 0 20px,#b4bdc8 20px 23px);border-bottom:14px solid var(--feuerrot);transition:transform 1.9s cubic-bezier(.5,0,.2,1) .7s}
+.blaulicht.auf .tor{transform:translateY(-101%)}
+.blaulicht i{animation:blitz 1.8s linear infinite}
+.blaulicht i:nth-child(2){animation-delay:.9s}
+@keyframes blitz{0%,30%,100%{opacity:.08}5%{opacity:.95}12%{opacity:.15}19%{opacity:.95}}
+
+/* Kontakt: Auswahl tippt kurz an, Ergebnis gleitet herein */
+.anliegen input:checked+span{animation:tipp .3s}
+@keyframes tipp{50%{transform:scale(.95)}}
+.ergebnis:not([hidden]){animation:rein .45s both}
+.kontakt .wege div{transition:border-color .2s,padding-left .2s}
+.kontakt .wege div:hover{border-color:var(--hellblau);padding-left:1.4rem}
+
+/* Wer am Gerät „Bewegung reduzieren“ eingestellt hat: kein Blinken, kein Hereinschieben, kein Dauerlauf.
+   Zeichnung, Drucker und Knöpfe laufen weiter, weil sie klein sind und an ihrem Platz bleiben. */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .zeigen,.schritte li,.eignung li{transform:none!important}
+  .feuerwehr::before,.knopf.rot{animation:none}
+  .blaulicht i{animation:none;opacity:.35}
+  .fadenkreuz{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="kopf" id="kopf">
+  <div class="huelle">
+    <a class="marke" href="#start" aria-label="Wolle Technik, zum Seitenanfang"><img src="logo-mark.png" alt="Wolle Technik" width="917" height="365"></a>
+    <nav aria-label="Hauptnavigation">
+      <a href="#druck">3D-Druck</a>
+      <a href="#feuerwehr">Feuerwehr</a>
+      <a class="knopf voll" href="#kontakt">Anfrage senden</a>
+    </nav>
+  </div>
+</header>
+
+<div class="bahn" id="bahn" aria-hidden="true">
+  <i></i>
+  <a href="#start" style="top:0" tabindex="-1"><span>Start</span></a>
+  <a href="#druck" style="top:33.3%" tabindex="-1"><span>3D-Druck</span></a>
+  <a href="#feuerwehr" style="top:66.6%" tabindex="-1"><span>Feuerwehr</span></a>
+  <a href="#kontakt" style="top:100%" tabindex="-1"><span>Kontakt</span></a>
+</div>
+
+<main>
+<!-- ================= START ================= -->
+<section class="start" id="start">
+  <div class="fadenkreuz" id="fadenkreuz" aria-hidden="true"><i></i><i></i><span></span></div>
+  <div class="huelle raster">
+    <div>
+      <img class="startlogo rein" style="--n:0" src="logo.png" alt="Logo Wolle Technik" width="1038" height="697">
+      <h1 class="gedruckt">Vom Problem zum fertigen Teil.</h1>
+      <p class="einleitung rein" style="--n:1">Ich konstruiere und drucke Bauteile genau nach Ihrem Bedarf – vom Ersatzteil, das es nicht mehr zu kaufen gibt, bis zum Prototyp Ihrer eigenen Idee.</p>
+      <div class="wahl rein" style="--n:2">
+        <a class="knopf voll" href="#kontakt" data-anliegen="druck">3D-Teil anfragen</a>
+        <a class="knopf rand" href="#feuerwehr">Für die Feuerwehr</a>
+      </div>
+    </div>
+    <div class="rein" style="--n:2">
+      <svg class="zeichnung" viewBox="0 0 540 470" role="img" aria-label="Animation: Ein Winkel mit zwei Bohrungen entsteht als bemaßte CAD-Zeichnung">
+      <path class="verdeckt" d="M270.0 250.0 L503.8 385.0"/>
+      <path class="verdeckt" d="M270.0 250.0 L129.7 331.0"/>
+      <path class="verdeckt" d="M270.0 250.0 L270.0 28.6"/>
+      <path class="flaeche" style="--o:0.34" d="M129.7 331.0 L363.5 466.0 L363.5 433.6 L176.5 325.6 L173.5 323.6 L170.7 321.2 L168.0 318.3 L165.5 315.1 L163.2 311.6 L161.3 308.0 L159.8 304.2 L158.7 300.4 L158.0 296.7 L157.8 293.2 L157.8 125.8 L129.7 109.6 Z"/>
+      <path class="flaeche" style="--o:0.55" d="M176.5 325.6 L363.5 433.6 L503.8 352.6 L316.7 244.6 Z"/>
+      <path class="flaeche" style="--o:0.55" d="M129.7 109.6 L157.8 125.8 L298.0 44.8 L270.0 28.6 Z"/>
+      <path class="flaeche" style="--o:0.2" d="M363.5 466.0 L503.8 385.0 L503.8 352.6 L363.5 433.6 Z"/>
+      <path class="flaeche" style="--o:0.32" d="M176.5 325.6 L173.5 323.6 L170.7 321.2 L168.0 318.3 L165.5 315.1 L163.2 311.6 L161.3 308.0 L159.8 304.2 L158.7 300.4 L158.0 296.7 L157.8 293.2 L298.0 212.2 L298.3 215.7 L299.0 219.4 L300.1 223.2 L301.6 227.0 L303.5 230.6 L305.7 234.1 L308.2 237.3 L311.0 240.2 L313.8 242.6 L316.7 244.6 Z"/>
+      <path class="flaeche" style="--o:0.2" d="M157.8 293.2 L157.8 125.8 L298.0 44.8 L298.0 212.2 Z"/>
+      <path class="kante" style="--n:0" pathLength="1" d="M129.7 331.0 L363.5 466.0"/>
+      <path class="kante" style="--n:1" pathLength="1" d="M363.5 466.0 L363.5 433.6"/>
+      <path class="kante" style="--n:2" pathLength="1" d="M363.5 433.6 L176.5 325.6"/>
+      <path class="kante" style="--n:3" pathLength="1" d="M176.5 325.6 L173.5 323.6 L170.7 321.2 L168.0 318.3 L165.5 315.1 L163.2 311.6 L161.3 308.0 L159.8 304.2 L158.7 300.4 L158.0 296.7 L157.8 293.2"/>
+      <path class="kante" style="--n:4" pathLength="1" d="M157.8 293.2 L157.8 125.8"/>
+      <path class="kante" style="--n:5" pathLength="1" d="M157.8 125.8 L129.7 109.6"/>
+      <path class="kante" style="--n:6" pathLength="1" d="M129.7 109.6 L129.7 331.0"/>
+      <path class="kante" style="--n:7" pathLength="1" d="M363.5 466.0 L503.8 385.0"/>
+      <path class="kante" style="--n:8" pathLength="1" d="M503.8 385.0 L503.8 352.6"/>
+      <path class="kante" style="--n:9" pathLength="1" d="M363.5 433.6 L503.8 352.6"/>
+      <path class="kante" style="--n:10" pathLength="1" d="M503.8 352.6 L316.7 244.6"/>
+      <path class="kante" style="--n:11" pathLength="1" d="M176.5 325.6 L316.7 244.6"/>
+      <path class="kante" style="--n:12" pathLength="1" d="M316.7 244.6 L313.8 242.6 L311.0 240.2 L308.2 237.3 L305.7 234.1 L303.5 230.6 L301.6 227.0 L300.1 223.2 L299.0 219.4 L298.3 215.7 L298.0 212.2"/>
+      <path class="kante" style="--n:13" pathLength="1" d="M157.8 293.2 L298.0 212.2"/>
+      <path class="kante" style="--n:14" pathLength="1" d="M298.0 212.2 L298.0 44.8"/>
+      <path class="kante" style="--n:15" pathLength="1" d="M157.8 125.8 L298.0 44.8"/>
+      <path class="kante" style="--n:16" pathLength="1" d="M298.0 44.8 L270.0 28.6"/>
+      <path class="kante" style="--n:17" pathLength="1" d="M129.7 109.6 L270.0 28.6"/>
+      <path class="kante loch" style="--n:18" pathLength="1" d="M356.5 348.6 L353.0 350.3 L349.0 351.7 L344.7 352.7 L340.1 353.4 L335.5 353.6 L330.8 353.4 L326.3 352.7 L322.0 351.7 L318.0 350.3 L314.4 348.6 L311.4 346.5 L309.0 344.2 L307.2 341.7 L306.1 339.1 L305.7 336.4 L306.1 333.7 L307.2 331.1 L309.0 328.6 L311.4 326.3 L314.4 324.2 L318.0 322.5 L322.0 321.1 L326.3 320.1 L330.8 319.4 L335.5 319.2 L340.1 319.4 L344.7 320.1 L349.0 321.1 L353.0 322.5 L356.5 324.2 L359.5 326.3 L362.0 328.6 L363.8 331.1 L364.9 333.7 L365.2 336.4 L364.9 339.1 L363.8 341.7 L362.0 344.2 L359.5 346.5 Z"/>
+      <path class="kante loch" style="--n:19" pathLength="1" d="M206.9 183.8 L207.1 179.9 L207.9 175.7 L209.2 171.5 L210.9 167.2 L213.0 163.1 L215.5 159.2 L218.4 155.6 L221.4 152.3 L224.6 149.6 L227.9 147.4 L231.2 145.8 L234.4 144.8 L237.5 144.5 L240.3 144.9 L242.8 145.9 L244.9 147.6 L246.7 149.8 L247.9 152.6 L248.7 155.9 L249.0 159.6 L248.7 163.5 L247.9 167.7 L246.7 171.9 L244.9 176.2 L242.8 180.3 L240.3 184.2 L237.5 187.8 L234.4 191.1 L231.2 193.8 L227.9 196.0 L224.6 197.6 L221.4 198.6 L218.4 198.9 L215.5 198.5 L213.0 197.5 L210.9 195.8 L209.2 193.6 L207.9 190.8 L207.1 187.5 Z"/>
+      <g class="mass" style="--n:0"><path d="M129.7 331.0 L82.9 358.0 M363.5 466.0 L316.8 493.0"/><path class="linie" d="M92.3 352.6 L326.1 487.6"/><circle cx="92.3" cy="352.6" r="2.5"/><circle cx="326.1" cy="487.6" r="2.5"/><text x="193.2" y="442.1" text-anchor="middle">100</text></g>
+      <g class="mass" style="--n:1"><path d="M503.8 385.0 L550.6 412.0 M363.5 466.0 L410.3 493.0"/><path class="linie" d="M541.2 406.6 L400.9 487.6"/><circle cx="541.2" cy="406.6" r="2.5"/><circle cx="400.9" cy="487.6" r="2.5"/><text x="495.1" y="465.1" text-anchor="middle">60</text></g>
+      <g class="mass" style="--n:2"><path d="M129.7 331.0 L82.9 358.0 M129.7 109.6 L82.9 136.6"/><path class="linie" d="M92.3 352.6 L92.3 131.2"/><circle cx="92.3" cy="352.6" r="2.5"/><circle cx="92.3" cy="131.2" r="2.5"/><text x="68.3" y="246.9" text-anchor="middle">82</text></g>
+      <g class="mass" style="--n:3"><path class="linie" d="M356.5 324.2 L426.5 232.2 h44"/><text x="430.5" y="226.2">Ø 18</text></g>
+      <g class="mass" style="--n:4"><path class="linie" d="M233.4 271.1 L262 232 h34"/><circle cx="233.4" cy="271.1" r="2.5"/><text x="266" y="226">R 8</text></g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 3D-DRUCK ================= -->
+<section class="abschnitt druck" id="druck">
+  <div class="huelle">
+    <h2 class="zeigen">Konstruktion und 3D-Druck aus einer Hand</h2>
+    <p class="vorspann zeigen">Sie müssen keine fertige Datei mitbringen. Ein Foto, eine Skizze mit Maßen oder das kaputte Originalteil reichen als Anfang.</p>
+
+    <div class="raster">
+      <div class="zeigen">
+        <ol class="schritte">
+          <li><div><h3>Sie schildern, was Sie brauchen</h3><p>Wofür ist das Teil, wie groß ist es, was muss es aushalten? Je genauer, desto schneller kann ich ein Angebot machen.</p></div></li>
+          <li><div><h3>Ich konstruiere das Teil am Rechner</h3><p>Sie bekommen eine Vorschau des 3D-Modells und können Änderungen anmelden, bevor gedruckt wird.</p></div></li>
+          <li><div><h3>Das Teil wird gedruckt</h3><p>Im passenden Material für den Einsatz – als Einzelstück oder in kleiner Stückzahl.</p></div></li>
+          <li><div><h3>Sie erhalten Ihr Teil</h3><p>Per Versand oder zur Abholung. Passt etwas nicht, bessere ich nach.</p></div></li>
+        </ol>
+        <ul class="eignung" aria-label="Typische Aufträge">
+          <li>Ersatzteile</li><li>Halterungen</li><li>Gehäuse</li><li>Adapter</li><li>Prototypen</li><li>Kleinserien</li>
+        </ul>
+      </div>
+
+      <div class="zeigen" id="drucker">
+        <!-- Der Drucker wird vom Skript unten in Schrägansicht (isometrisch) gezeichnet -->
+        <svg class="drucker" viewBox="0 0 360 466" role="img" aria-label="Animation: Ein geschlossener 3D-Drucker, schräg von oben gesehen, druckt Schicht für Schicht einen Winkel">
+          <defs>
+            <linearGradient id="licht" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fd0ff" stop-opacity=".2"/><stop offset="1" stop-color="#9fd0ff" stop-opacity="0"/></linearGradient>
+            <!-- spart die Bohrungen aus der gerade gedruckten Schicht aus -->
+            <mask id="d-maske" maskUnits="userSpaceOnUse" x="0" y="0" width="360" height="466">
+              <rect width="360" height="466" fill="#fff"/><ellipse id="d-maskeloch" fill="#000" rx="0" ry="0"/><path id="d-maskespalt" fill="#000"/>
+            </mask>
+            <clipPath id="d-schnitt"><path id="d-schnittform"/></clipPath>
+          </defs>
+          <g id="d-hinten"></g>
+          <g id="d-bett"></g>
+          <g id="d-teil"></g>
+          <g id="d-raupen" mask="url(#d-maske)"></g>
+          <g id="druckkopf"></g>
+          <circle id="d-glut" r="2.6" fill="#ffb347"/>
+          <g id="d-vorn"></g>
+        </svg>
+        <p class="druckinfo">Im Druck: der Winkel aus der Zeichnung oben, 100 × 60 × 82 mm</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FEUERWEHR ================= -->
+<section class="abschnitt feuerwehr hell" id="feuerwehr">
+  <div class="huelle raster">
+    <div class="blaulicht zeigen" aria-hidden="true">
+      <!-- TODO bei Freigabe: Foto oder Animation der Entwicklung einsetzen -->
+      <i></i><i></i>
+      <p>In Vorbereitung</p>
+      <span class="tor">Feuerwehr</span>
+    </div>
+    <div class="zeigen" id="feuerwehrText">
+      <h2>Entwickelt für die Feuerwehr</h2>
+      <p>Ich arbeite an einer eigenen Entwicklung für den Feuerwehreinsatz. Sie wird hier vorgestellt, sobald sie verfügbar ist.</p>
+      <p>Sie sind bei einer Feuerwehr und möchten früh davon erfahren? Lassen Sie sich vormerken, dann melde ich mich bei Ihnen.</p>
+      <a class="knopf rot" href="#kontakt" data-anliegen="kauf">Vormerken lassen</a>
+    </div>
+  </div>
+</section>
+
+<!-- ================= KONTAKT ================= -->
+<section class="abschnitt kontakt hell" id="kontakt">
+  <div class="huelle raster">
+    <div class="zeigen">
+      <h2>Schreiben Sie mir</h2>
+      <p class="vorspann" style="margin:1rem 0 0">Ihre Anfrage ist unverbindlich. Ich melde mich mit Rückfragen oder direkt mit einem Angebot.</p>
+      <div class="wege">
+        <div><strong>E-Mail</strong><a class="mailLink" href="#"></a></div>
+        <div class="telBlock"><strong>Telefon</strong><a class="telLink" href="#"></a></div>
+      </div>
+    </div>
+
+    <form id="formular" class="zeigen" novalidate>
+      <fieldset>
+        <legend>Worum geht es?</legend>
+        <div class="anliegen">
+          <label><input type="radio" name="anliegen" value="druck" checked><span>3D-Teil anfragen</span></label>
+          <label><input type="radio" name="anliegen" value="kauf"><span>Feuerwehr-Produkt</span></label>
+          <label><input type="radio" name="anliegen" value="frage"><span>Etwas anderes</span></label>
+        </div>
+      </fieldset>
+
+      <div class="zwei">
+        <div><label for="name">Name</label><input id="name" name="name" type="text" autocomplete="name" required></div>
+        <div><label for="email">E-Mail</label><input id="email" name="email" type="email" autocomplete="email" required></div>
+      </div>
+
+      <div class="nur3d" id="nur3d"><div>
+        <div class="zwei">
+          <div><label for="vorlage">Was haben Sie schon?</label>
+            <select id="vorlage" name="vorlage">
+              <option>Noch nichts, nur die Idee</option>
+              <option>Foto oder Skizze mit Maßen</option>
+              <option>Das Originalteil als Muster</option>
+              <option>Fertige 3D-Datei (STL, STEP …)</option>
+            </select></div>
+          <div><label for="stueck">Stückzahl</label><input id="stueck" name="stueck" type="number" min="1" value="1"></div>
+        </div>
+      </div></div>
+
+      <div><label for="nachricht">Ihre Nachricht</label>
+        <textarea id="nachricht" name="nachricht" required></textarea></div>
+
+      <p class="hinweis" id="fehler" role="alert" hidden></p>
+      <button class="knopf voll" type="submit" id="senden">Anfrage senden</button>
+      <p class="hinweis">Fotos und Dateien können Sie anschließend per E-Mail nachreichen. Ihre Angaben werden nur zur Bearbeitung Ihrer Anfrage verwendet.</p>
+
+      <div class="ergebnis" id="ergebnis" hidden>
+        <strong id="ergebnisTitel"></strong>
+        <pre id="ergebnisText"></pre>
+        <button class="knopf rand" type="button" id="kopieren">Text kopieren</button>
+      </div>
+    </form>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="huelle">
+    <p>© <span id="jahr"></span> Friedrich Wollenberg</p>
+    <details id="impressum"><summary>Impressum</summary>
+      <p><span class="vorspann"><strong>Adresse: </strong></br></br>
+								 Friedrich Wollenberg</br>
+								 Herzbergstr. 5</br>
+								 63571 Gelnhausen</br></br>
+								<strong>E-Mail:</strong> <a class="impressumMail" href="#"></a></br>
+								<strong>Telefon:</strong> <a class="telLink" href="#"></a></br></span></p></details>
+    <details id="datenschutz"><summary>Datenschutz</summary>
+      <p><strong>Kurz gesagt:</strong> Diese Website setzt keine Cookies, verwendet keine Analyse- oder Werbedienste und lädt keine Inhalte von fremden Servern. Die Schriften sind lokal eingebunden. Personenbezogene Daten fallen nur beim Aufruf der Seite (technisch notwendige Serverprotokolle) und wenn Sie mir schreiben oder mich anrufen an.</p>
+
+      <h3>1. Verantwortlicher</h3>
+      <p>Friedrich Wollenberg <br>Herzbergstr. 5, 63571 Gelnhausen<br>
+        E-Mail: <a class="impressumMail" href="#"></a><br>Telefon: <a class="telLink" href="#"></a></p>
+
+      <h3>2. Bereitstellung der Website (Hosting bei GitHub Pages)</h3>
+      <p>Diese Website wird über GitHub Pages bereitgestellt, einen Dienst der GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA. Beim Aufruf der Seite verarbeitet GitHub technisch notwendige Daten, insbesondere Ihre IP-Adresse, Datum und Uhrzeit des Abrufs, die aufgerufene Datei, die übertragene Datenmenge sowie Angaben zu Browser und Betriebssystem. Das ist erforderlich, um die Seite auszuliefern und den Dienst vor Missbrauch und Angriffen zu schützen.</p>
+      <p>Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Mein berechtigtes Interesse liegt in einer sicheren und zuverlässigen Bereitstellung der Website. Dabei können Daten in die USA übermittelt werden. GitHub ist nach dem EU-US Data Privacy Framework zertifiziert, für das die EU-Kommission ein angemessenes Datenschutzniveau festgestellt hat (Art. 45 DSGVO). Weitere Informationen: <a href="https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">Datenschutzerklärung von GitHub</a>.</p>
+
+      <h3>3. Kontakt per E-Mail, Telefon und Anfrageformular</h3>
+      <p>Das Anfrageformular auf dieser Seite überträgt keine Daten an einen Server. Es erstellt lediglich einen E-Mail-Entwurf in Ihrem eigenen E-Mail-Programm, den Sie selbst absenden. Wenn Sie mir eine E-Mail schreiben oder mich anrufen, verarbeite ich die Angaben, die Sie mir mitteilen (z. B. Name, E-Mail-Adresse, Telefonnummer, Ihre Nachricht sowie Fotos oder Dateien), ausschließlich, um Ihre Anfrage zu beantworten und gegebenenfalls einen Auftrag durchzuführen.</p>
+      <p>Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO, soweit Ihre Anfrage auf ein Angebot oder einen Auftrag zielt, im Übrigen Art. 6 Abs. 1 lit. f DSGVO (mein berechtigtes Interesse, Anfragen zu beantworten). Ihre Angaben lösche ich, sobald Ihre Anfrage erledigt ist, es sei denn, gesetzliche Aufbewahrungspflichten (insbesondere nach Handels- und Steuerrecht, in der Regel 6 bzw. 10 Jahre) stehen dem entgegen.</p>
+      <p>Meine E-Mail-Postfächer werden von der STRATO GmbH, Otto-Ostrowski-Straße 7, 10249 Berlin, betrieben. Mit STRATO besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO.</p>
+
+      <h3>4. Keine Cookies, keine Analyse</h3>
+      <p>Diese Website verwendet keine Cookies, keine Analyse- oder Tracking-Werkzeuge, keine Social-Media-Plugins und keine eingebetteten Inhalte von Drittanbietern. Eine automatisierte Entscheidungsfindung oder ein Profiling findet nicht statt.</p>
+
+      <h3>5. Ihre Rechte</h3>
+      <p>Sie haben gegenüber mir folgende Rechte hinsichtlich Ihrer personenbezogenen Daten:</p>
+      <ul>
+        <li>Auskunft (Art. 15 DSGVO)</li>
+        <li>Berichtigung (Art. 16 DSGVO)</li>
+        <li>Löschung (Art. 17 DSGVO)</li>
+        <li>Einschränkung der Verarbeitung (Art. 18 DSGVO)</li>
+        <li>Datenübertragbarkeit (Art. 20 DSGVO)</li>
+        <li>Widerspruch gegen Verarbeitungen, die auf Art. 6 Abs. 1 lit. f DSGVO beruhen (Art. 21 DSGVO)</li>
+      </ul>
+      <p>Wenden Sie sich dazu einfach an die oben genannte Adresse. Außerdem können Sie sich bei einer Datenschutz-Aufsichtsbehörde beschweren (Art. 77 DSGVO), zum Beispiel bei der für mich zuständigen Behörde: Der Hessische Beauftragte für Datenschutz und Informationsfreiheit, Postfach 3163, 65021 Wiesbaden, <a href="https://datenschutz.hessen.de" target="_blank" rel="noopener">datenschutz.hessen.de</a>.</p>
+
+      <p class="leise">Stand: November 2026</p></details>
+  </div>
+</footer>
+
+<script>
+/* ==========================================================
+   EINSTELLUNGEN – hier Ihre Daten eintragen
+   ========================================================== */
+const EINSTELLUNGEN = {
+  email: "kontakt@wolle-technik.de",   // Anfragen: Kontaktformular und Kontaktbereich
+  impressumEmail: "info@wolle-technik.de",   // nur im Impressum
+  telefon: "+49 174 93 92 820",                    // z. B. "+49 170 1234567" – leer lassen = wird nicht angezeigt
+  // Optional: Adresse eines Formular-Dienstes (z. B. Web3Forms oder Formspree).
+  // Leer = das Formular öffnet einen fertigen E-Mail-Entwurf im Mailprogramm des Kunden.
+  formularAdresse: ""
+};
+
+/* ---------- Kontaktdaten einsetzen ---------- */
+const $ = id => document.getElementById(id);
+$("jahr").textContent = new Date().getFullYear();
+document.querySelectorAll(".mailLink").forEach(a => {
+  a.textContent = EINSTELLUNGEN.email;
+  a.href = "mailto:" + EINSTELLUNGEN.email;
+});
+document.querySelectorAll(".impressumMail").forEach(a => {
+  a.textContent = EINSTELLUNGEN.impressumEmail;
+  a.href = "mailto:" + EINSTELLUNGEN.impressumEmail;
+});
+document.querySelectorAll(".telLink").forEach(a => {
+  a.textContent = EINSTELLUNGEN.telefon;
+  a.href = "tel:" + EINSTELLUNGEN.telefon.replace(/[^\d+]/g, "");
+});
+if (!EINSTELLUNGEN.telefon) {
+  document.querySelectorAll(".telZeile").forEach(z => z.hidden = true);
+}
+
+/* ---------- Kopfzeile + Rand-Leiterbahn ---------- */
+const kopf = $("kopf"), bahn = $("bahn");
+const ziele = ["start", "druck", "feuerwehr", "kontakt"].map($);
+const punkte = [...bahn.querySelectorAll("a")];
+function rollen() {
+  kopf.classList.toggle("fest", scrollY > 30);
+  const mitte = scrollY + innerHeight * .45;
+  let teil = 0;
+  ziele.forEach((z, i) => {
+    const oben = z.offsetTop, naechstes = ziele[i + 1] ? ziele[i + 1].offsetTop : document.body.scrollHeight;
+    if (mitte >= oben) teil = i + Math.min(1, (mitte - oben) / (naechstes - oben));
+    punkte[i].classList.toggle("an", mitte >= oben);
+  });
+  bahn.style.setProperty("--weg", Math.min(1, teil / (ziele.length - 1)));
+}
+addEventListener("scroll", rollen, { passive: true }); addEventListener("resize", rollen); rollen();
+
+/* ---------- Drucker in 3D: druckt den Winkel Schicht für Schicht ----------
+   Alle Maße in mm. x läuft nach rechts vorn, y nach rechts hinten, z nach oben.
+   Gezeichnet wird von hinten nach vorn, damit Vorderes Hinteres verdeckt. */
+const druckerStarten = (() => {
+  const S = 1.3, C = .866 * S, HS = .5 * S, OX = 22, OY = 346;        // Maßstab und Lage der Schrägansicht
+  const pt = (x, y, z) => [OX + (x + y) * C, OY + (x - y) * HS - z * S];
+  const P = (x, y, z) => pt(x, y, z).map(v => v.toFixed(1)).join(",");
+  const pfad = p => "M" + p.join(" L") + "Z";
+  const fl = (p, farbe, extra = "") => `<path d="${pfad(p)}" fill="${farbe}"${extra}/>`;
+  function quader(x0, x1, y0, y1, z0, z1, [oben, vorn, rechts], extra) {   // sichtbar: Oberseite, Vorderseite, rechte Seite
+    return fl([P(x0, y0, z0), P(x1, y0, z0), P(x1, y0, z1), P(x0, y0, z1)], vorn, extra)
+         + fl([P(x1, y0, z0), P(x1, y1, z0), P(x1, y1, z1), P(x1, y0, z1)], rechts, extra)
+         + fl([P(x0, y0, z1), P(x1, y0, z1), P(x1, y1, z1), P(x0, y1, z1)], oben, extra);
+  }
+  const linie = (a, b, farbe, breite) => `<path d="M${a} L${b}" stroke="${farbe}" stroke-width="${breite}" fill="none"/>`;
+  const ellipseXY = (x, y, z, r) => { const [cx, cy] = pt(x, y, z); return { cx, cy, rx: r * S * 1.2247, ry: r * S * .7071 }; };  // Kreis in waagerechter Ebene
+
+  const B = 160, T = 120, HO = 200, SOCKEL = 40;         // Gehäuse: Breite, Tiefe, Höhe, Sockel mit Anzeige
+  const DUESE = 150, LAGE = 2, BAHN = 6;                 // Höhe der Düse, Schichtdicke, Breite einer Druckbahn
+  const VX = 30, VY = 30;                                // Lage des Winkels auf dem Druckbett
+  const BASIS = 12, HOEHE = 82, SCHICHTEN = HOEHE / LAGE; // Grundplatte 12 mm, Schenkel bis 82 mm
+  const LOCH = { x: 58, y: 30, r: 9 }, QUERLOCH = { y: 30, z: 50, r: 9 }, LOCHFARBE = "#062a57";
+  const TEIL = ["#5aa9ff", "#0a7bff", "#0660c8"], KANTE = ` stroke="#06305f" stroke-width=".6" stroke-linejoin="round"`;
+
+  const $$ = id => document.getElementById(id);
+  const gBett = $$("d-bett"), gTeil = $$("d-teil"), gRaupen = $$("d-raupen"), gKopf = $$("druckkopf"), glut = $$("d-glut");
+  const maskeLoch = $$("d-maskeloch"), maskeSpalt = $$("d-maskespalt"), schnitt = $$("d-schnittform");
+
+  /* Feste Teile: Innenwände hinten, Führungsstangen, vorn Glas, Rahmen und Sockel mit Anzeige */
+  $$("d-hinten").innerHTML =
+      fl([P(0, 0, SOCKEL), P(B, 0, SOCKEL), P(B, T, SOCKEL), P(0, T, SOCKEL)], "#0a1420")
+    + fl([P(0, 0, SOCKEL), P(0, T, SOCKEL), P(0, T, HO), P(0, 0, HO)], "#0f1c2e")
+    + fl([P(0, T, SOCKEL), P(B, T, SOCKEL), P(B, T, HO), P(0, T, HO)], "#0c1624")
+    + fl([P(0, 0, HO - 70), P(0, T, HO - 70), P(0, T, HO), P(0, 0, HO)], "url(#licht)")
+    + fl([P(0, T, HO - 70), P(B, T, HO - 70), P(B, T, HO), P(0, T, HO)], "url(#licht)")
+    + linie(P(B * .25, T - 6, SOCKEL), P(B * .25, T - 6, HO), "#33475e", 4)
+    + linie(P(B * .75, T - 6, SOCKEL), P(B * .75, T - 6, HO), "#33475e", 4)
+    + linie(P(0, T, SOCKEL), P(0, T, HO), "#3d5677", 1.5);
+  const rahmen = "#5a7aa3";
+  $$("d-vorn").innerHTML =
+      fl([P(0, 0, SOCKEL), P(B, 0, SOCKEL), P(B, 0, HO), P(0, 0, HO)], "rgba(159,208,255,.06)")
+    + fl([P(B, 0, SOCKEL), P(B, T, SOCKEL), P(B, T, HO), P(B, 0, HO)], "rgba(159,208,255,.04)")
+    + fl([P(0, 0, HO), P(B, 0, HO), P(B, T, HO), P(0, T, HO)], "rgba(159,208,255,.03)")
+    + fl([P(95, 0, HO), P(122, 0, HO), P(72, 0, SOCKEL), P(45, 0, SOCKEL)], "rgba(255,255,255,.04)")
+    + fl([P(0, 0, 0), P(B, 0, 0), P(B, 0, SOCKEL), P(0, 0, SOCKEL)], "#2c4263")
+    + fl([P(B, 0, 0), P(B, T, 0), P(B, T, SOCKEL), P(B, 0, SOCKEL)], "#22354f")
+    + `<path d="M${P(0, 0, 0)} L${P(0, 0, HO)} M${P(B, 0, 0)} L${P(B, 0, HO)} M${P(B, T, 0)} L${P(B, T, HO)}
+        M${P(0, 0, HO)} L${P(B, 0, HO)} L${P(B, T, HO)} L${P(0, T, HO)} Z M${P(0, 0, SOCKEL)} L${P(B, 0, SOCKEL)} L${P(B, T, SOCKEL)}
+        M${P(0, 0, 0)} L${P(B, 0, 0)} L${P(B, T, 0)}" stroke="${rahmen}" stroke-width="2.5" stroke-linejoin="round" fill="none"/>`
+    + `<g transform="matrix(${C} ${HS} 0 ${S} ${OX} ${OY})"><rect x="14" y="-31" width="72" height="20" rx="3" fill="#0b1522"/>
+        <text id="anzeige" x="20" y="-17.5" style="font:500 9px var(--display);fill:#7fd0ff">Bereit</text><circle cx="146" cy="-21" r="3.5" fill="#35b0ff"/></g>`;
+  const anzeige = $$("anzeige");
+
+  /* Ein Bild: i = aktuelle Schicht, t = Fortschritt in der Schicht (0–1), zb = Höhe des Druckbetts */
+  /* Querschnitt des Winkels (x nach rechts, z nach oben), entlang y 60 mm tief:
+     Grundplatte 100 × 12, Schenkel 12 dick, innen Hohlkehle R 8 als Übergang, oben flach.
+     Die Unterseite bleibt flach, damit das Teil sauber auf dem Druckbett liegt. */
+  const KEHLE = 8;
+  const PROFIL = [[0, 0], [100, 0], [100, BASIS], [12 + KEHLE, BASIS]];
+  for (let k = 1; k <= 8; k++) { const w = 1.5 * Math.PI - k / 8 * Math.PI / 2; PROFIL.push([12 + KEHLE + KEHLE * Math.cos(w), BASIS + KEHLE + KEHLE * Math.sin(w)]); }
+  PROFIL.push([12, HOEHE], [0, HOEHE]);
+  // Breite des Querschnitts in Höhe z: von links bis rechts
+  function quer(z) {
+    if (z < BASIS) return [0, 100];
+    if (z < BASIS + KEHLE) return [0, 12 + KEHLE - Math.sqrt(KEHLE * KEHLE - (z - BASIS - KEHLE) ** 2)];
+    return [0, 12];
+  }
+  // Profil bis zur Höhe h abschneiden (Sutherland-Hodgman an der Ebene z = h)
+  function bis(h) {
+    const aus = [];
+    PROFIL.forEach((p, k) => {
+      const q = PROFIL[(k + 1) % PROFIL.length], pin = p[1] <= h, qin = q[1] <= h;
+      if (pin) aus.push(p);
+      if (pin !== qin) { const s = (h - p[1]) / (q[1] - p[1]); aus.push([p[0] + s * (q[0] - p[0]), h]); }
+    });
+    return aus;
+  }
+  const rgb = h => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16));
+  const mischen = (a, b, w) => "rgb(" + rgb(a).map((v, k) => Math.round(v + (rgb(b)[k] - v) * w)).join(",") + ")";
+
+  let kopf = [VX, VY + BAHN / 2];
+  function zeichnen(i, t, zb) {
+    const fertig = Math.min(i, SCHICHTEN) * LAGE;          // so hoch ist das Teil schon
+    gBett.innerHTML = quader(12, B - 12, 12, T - 12, zb - 6, zb, ["#8b9bae", "#5f6f83", "#4b5a6c"]);
+
+    let s = "";
+    if (fertig > 0) {
+      const umriss = bis(fertig), W = (x, y, z) => P(VX + x, VY + y, zb + z);
+      // Mantelflächen: jede Kante des Querschnitts 60 mm in die Tiefe gezogen; nur die zum Betrachter zeigenden, hinten zuerst
+      const flaechen = [];
+      umriss.forEach((p, k) => {
+        const q = umriss[(k + 1) % umriss.length], nx = q[1] - p[1], nz = p[0] - q[0];
+        if (nx + nz <= 1e-9) return;
+        const w = Math.atan2(nz, nx) / (Math.PI / 2), farbe = mischen(TEIL[2], TEIL[0], Math.min(1, Math.max(0, w)));
+        const lang = Math.hypot(nx, nz) > 3;
+        flaechen.push({ tiefe: p[0] + q[0] + p[1] + q[1],
+          svg: fl([W(p[0], 0, p[1]), W(q[0], 0, q[1]), W(q[0], 60, q[1]), W(p[0], 60, p[1])], farbe, lang ? KANTE : ` stroke="${farbe}" stroke-width=".6"`) });
+      });
+      flaechen.sort((a, b) => a.tiefe - b.tiefe).forEach(f => s += f.svg);
+      s += fl(umriss.map(([x, z]) => W(x, 0, z)), TEIL[1], KANTE);                 // Vorderseite als ein Stück
+      const e = ellipseXY(VX + LOCH.x, VY + LOCH.y, zb + Math.min(fertig, BASIS), LOCH.r);
+      s += `<ellipse cx="${e.cx}" cy="${e.cy}" rx="${e.rx}" ry="${e.ry}" fill="${LOCHFARBE}"/>`;
+    }
+    if (fertig > BASIS + KEHLE) {
+      const { y, z, r } = QUERLOCH;
+      if (fertig > z - r) {                                  // Querbohrung im Schenkel, so weit schon gedruckt
+        schnitt.setAttribute("d", pfad([P(VX + 12, VY, zb + BASIS + KEHLE), P(VX + 12, VY + 60, zb + BASIS + KEHLE), P(VX + 12, VY + 60, zb + fertig), P(VX + 12, VY, zb + fertig)]));
+        const kreis = [];
+        for (let k = 0; k < 32; k++) { const w = k / 32 * 2 * Math.PI; kreis.push(P(VX + 12, VY + y + r * Math.cos(w), zb + z + r * Math.sin(w))); }
+        s += `<path d="${pfad(kreis)}" fill="${LOCHFARBE}" clip-path="url(#d-schnitt)"/>`;
+        if (fertig < z + r) {                                // von oben in die angeschnittene Bohrung sehen
+          const d = Math.sqrt(r * r - (fertig - z) ** 2);
+          s += fl([P(VX, VY + y - d, zb + fertig), P(VX + 12, VY + y - d, zb + fertig), P(VX + 12, VY + y + d, zb + fertig), P(VX, VY + y + d, zb + fertig)], LOCHFARBE);
+        }
+      }
+    }
+    gTeil.innerHTML = s;
+
+    /* aktuelle Schicht: die Düse legt Bahn neben Bahn, im Zickzack */
+    let raupen = "";
+    maskeLoch.setAttribute("rx", 0); maskeSpalt.setAttribute("d", "");
+    if (i < SCHICHTEN) {
+      const basis = i * LAGE < BASIS, zt = zb + (i + 1) * LAGE;
+      const [xl, xr] = quer((i + .5) * LAGE);                // Breite dieser Schicht (Hohlkehle und Rundung beachten)
+      const laengs = basis && i % 2 === 0;                   // Grundplatte: Richtung wechselt je Schicht; Schenkel: immer längs der Tiefe
+      const lang = laengs ? xr - xl : 60, breit = laengs ? 60 : xr - xl;
+      const n = Math.max(1, Math.ceil(breit / BAHN - .05)), q = Math.min(n - 1e-6, t * n), k = Math.floor(q), anteil = q - k;
+      const mitteBahn = b => (b + .5) * breit / n;
+      const ort = (a, b) => laengs ? [VX + xl + a, VY + mitteBahn(b)] : [VX + xl + mitteBahn(b), VY + a];
+      const ende = (b, a) => P(...ort(a, b), zt);
+      let d = "";
+      for (let b = 0; b < k; b++) d += "M" + ende(b, b % 2 ? lang : 0) + " L" + ende(b, b % 2 ? 0 : lang);
+      const start = k % 2 ? lang : 0, jetzt = k % 2 ? lang * (1 - anteil) : lang * anteil;
+      if (t > 0) d += "M" + ende(k, start) + " L" + ende(k, jetzt);
+      kopf = ort(jetzt, k);
+      raupen = `<path d="${d}" stroke="${i % 2 ? "#86c6ff" : "#62b2ff"}" stroke-width="5.6" fill="none"/>`;
+      if (basis) {
+        const e = ellipseXY(VX + LOCH.x, VY + LOCH.y, zt, LOCH.r);
+        maskeLoch.setAttribute("cx", e.cx); maskeLoch.setAttribute("cy", e.cy); maskeLoch.setAttribute("rx", e.rx); maskeLoch.setAttribute("ry", e.ry);
+      } else {
+        const { y, z, r } = QUERLOCH, zm = (i + .5) * LAGE;
+        if (Math.abs(zm - z) < r) {
+          const sp = Math.sqrt(r * r - (zm - z) ** 2);
+          maskeSpalt.setAttribute("d", pfad([P(VX - 3, VY + y - sp, zt), P(VX + 15, VY + y - sp, zt), P(VX + 15, VY + y + sp, zt), P(VX - 3, VY + y + sp, zt)]));
+        }
+      }
+    }
+    gRaupen.innerHTML = raupen;
+
+    /* Mechanik: Schienen links und rechts, Querträger, Druckkopf */
+    const [hx, hy] = kopf, Z = DUESE, METALL = ["#7d8ea3", "#5b6b7e", "#46556a"];
+    gKopf.innerHTML =
+        quader(2, 8, 4, T - 4, Z + 30, Z + 37, METALL)
+      + quader(8, B - 8, hy - 4, hy + 4, Z + 31, Z + 36, METALL)
+      + quader(B - 8, B - 2, 4, T - 4, Z + 30, Z + 37, METALL)
+      + quader(hx - 13, hx + 13, hy - 12, hy + 12, Z + 14, Z + 40, ["#eef2f6", "#c9d3de", "#a3b1c1"])
+      + quader(hx - 7, hx + 7, hy - 6, hy + 6, Z + 6, Z + 14, ["#b5c0cc", "#8b9bae", "#738396"])
+      + quader(hx - 2, hx + 2, hy - 2, hy + 2, Z + 1, Z + 6, ["#ffcf8a", "#d8913a", "#b4742a"]);
+    const [gx, gy] = pt(hx, hy, Z);
+    glut.setAttribute("cx", gx); glut.setAttribute("cy", gy);
+  }
+
+  /* Ablauf */
+  let i = 0, t = 0, pause = 0, zb = DUESE - LAGE, zuletzt = 0, laeuft = false;
+  zeichnen(0, 0, zb);
+  function bild(jetzt) {
+    const dt = Math.min(.05, (jetzt - zuletzt) / 1000); zuletzt = jetzt;
+    if (pause > 0) {                                         // fertig: kurz zeigen, dann von vorn
+      pause -= dt;
+      if (pause <= 0) { i = 0; t = 0; }
+    } else {
+      t += dt / (i * LAGE < BASIS ? 1.1 : .32);              // Grundplatte langsam, Schenkel schnell
+      if (t >= 1) { t = 0; i++; if (i >= SCHICHTEN) pause = 3; }
+    }
+    zb += (DUESE - Math.min(i + 1, SCHICHTEN) * LAGE - zb) * Math.min(1, dt * 10);   // Druckbett senkt sich mit jeder Schicht
+    anzeige.textContent = pause > 0 ? "Fertig" : "Schicht " + (i + 1) + " / " + SCHICHTEN;
+    zeichnen(i, t, zb);
+    requestAnimationFrame(bild);
+  }
+  return () => { if (laeuft) return; laeuft = true; zuletzt = performance.now(); requestAnimationFrame(bild); };
+})();
+
+/* ---------- Einblenden beim Scrollen, Drucker starten ---------- */
+const seher = new IntersectionObserver(es => es.forEach(e => {
+  if (!e.isIntersecting) return;
+  e.target.classList.add("da");
+  if (e.target.id === "drucker") druckerStarten();
+  seher.unobserve(e.target);
+}), { threshold: .15 });
+document.querySelectorAll(".zeigen").forEach(el => seher.observe(el));
+// CAD-Zeichnung im Start erst zeichnen, wenn sie zu sehen ist (auf dem Handy liegt sie unter dem Text)
+const zeichnung = document.querySelector(".zeichnung");
+new IntersectionObserver((es, o) => es.forEach(e => { if (e.isIntersecting) { zeichnung.classList.add("an"); o.disconnect(); } }), { threshold: .35 }).observe(zeichnung);
+
+/* ---------- Rolltor: fährt erst hoch, wenn der Text daneben bzw. darunter gut im Bild ist ---------- */
+new IntersectionObserver((es, o) => es.forEach(e => {
+  if (e.isIntersecting) { document.querySelector(".blaulicht").classList.add("auf"); o.disconnect(); }
+}), { threshold: .6 }).observe($("feuerwehrText"));
+
+/* ---------- Fadenkreuz im Start ---------- */
+const startBereich = $("start"), kreuz = $("fadenkreuz");
+startBereich.addEventListener("pointermove", e => {
+  if (e.pointerType !== "mouse") return;
+  const r = startBereich.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  kreuz.style.setProperty("--x", x + "px"); kreuz.style.setProperty("--y", y + "px");
+  kreuz.lastElementChild.textContent = "X " + (x / 4).toFixed(1) + "   Y " + (y / 4).toFixed(1);
+  kreuz.classList.add("aktiv");
+});
+startBereich.addEventListener("pointerleave", () => kreuz.classList.remove("aktiv"));
+
+/* ---------- Formular ---------- */
+const f = $("formular"), nachricht = $("nachricht");
+const TEXTE = {
+  druck: { betreff: "Anfrage 3D-Teil", hilfe: "Wofür brauchen Sie das Teil? Ungefähre Maße, Belastung, Einsatz drinnen oder draußen …" },
+  kauf:  { betreff: "Vormerkung Feuerwehr-Produkt", hilfe: "Für welche Feuerwehr oder Organisation fragen Sie an?" },
+  frage: { betreff: "Anfrage über die Website", hilfe: "Wie kann ich Ihnen helfen?" }
+};
+function anliegen() { return f.elements.anliegen.value; }
+function anliegenAnzeigen() {
+  $("nur3d").classList.toggle("zu", anliegen() !== "druck");
+  nachricht.placeholder = TEXTE[anliegen()].hilfe;
+}
+f.querySelectorAll("[name=anliegen]").forEach(r => r.addEventListener("change", anliegenAnzeigen));
+anliegenAnzeigen();
+
+// Knöpfe auf der Seite wählen das passende Anliegen vor
+document.querySelectorAll("[data-anliegen]").forEach(a => a.addEventListener("click", () => {
+  f.elements.anliegen.value = a.dataset.anliegen; anliegenAnzeigen();
+}));
+
+const perDienst = !!EINSTELLUNGEN.formularAdresse;
+if (!perDienst) $("senden").textContent = "E-Mail-Entwurf öffnen";
+
+f.addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const fehler = $("fehler"), d = f.elements;
+  fehler.hidden = true;
+  if (!d.name.value.trim() || !d.nachricht.value.trim() || !d.email.validity.valid || !d.email.value) {
+    fehler.textContent = "Bitte Name, eine gültige E-Mail-Adresse und Ihre Nachricht eintragen.";
+    fehler.hidden = false; return;
+  }
+  const a = anliegen();
+  let text = d.nachricht.value.trim() + "\n\n";
+  if (a === "druck") text += "Vorlage: " + d.vorlage.value + "\nStückzahl: " + d.stueck.value + "\n";
+  text += "Name: " + d.name.value.trim() + "\nE-Mail: " + d.email.value.trim();
+  const betreff = TEXTE[a].betreff;
+
+  const zeige = (titel) => { $("ergebnisTitel").textContent = titel; $("ergebnisText").textContent = "Betreff: " + betreff + "\n\n" + text; $("ergebnis").hidden = false; };
+
+  if (perDienst) {
+    $("senden").disabled = true;
+    try {
+      const antwort = await fetch(EINSTELLUNGEN.formularAdresse, {
+        method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ subject: betreff, name: d.name.value, email: d.email.value, message: text })
+      });
+      if (!antwort.ok) throw new Error();
+      f.reset(); anliegenAnzeigen();
+      $("ergebnis").hidden = false; $("ergebnisTitel").textContent = "Anfrage gesendet. Ich melde mich bei Ihnen."; $("ergebnisText").textContent = ""; $("kopieren").hidden = true;
+    } catch {
+      zeige("Senden hat nicht geklappt. Bitte schicken Sie diesen Text an " + EINSTELLUNGEN.email + ":");
+    }
+    $("senden").disabled = false;
+  } else {
+    zeige("Ihr E-Mail-Programm öffnet sich mit dem fertigen Entwurf. Falls nicht: Text kopieren und an " + EINSTELLUNGEN.email + " senden.");
+    location.href = "mailto:" + EINSTELLUNGEN.email + "?subject=" + encodeURIComponent(betreff) + "&body=" + encodeURIComponent(text);
+  }
+});
+$("kopieren").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($("ergebnisText").textContent); $("kopieren").textContent = "Kopiert"; }
+  catch { $("kopieren").textContent = "Bitte Text markieren und kopieren"; }
+});
+</script>
+</body>
+</html>
