@@ -1,2 +1,2 @@
 # Wolle-Technik
-Wir arbeiten daran hier eine Website entstehen zu lassen 
+3D-Druck & Konstrucktion in Gelnhausen
